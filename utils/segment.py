@@ -1,0 +1,123 @@
+# -*- coding: utf-8 -*-
+
+from utils import data
+import pandas as pd
+import numpy as np
+
+
+#####################
+#main Function
+
+
+class get():
+
+    def __init__(self):
+        segment = data.get(data="segment")
+        self.consumer = get_consumer()
+        self.segment= add_labels_segment(segment)
+               
+    def by_quarter(self,save=True):
+        segment_grouped= group_segment_by_quarter(self.segment)
+        merged_data = merge_consumer_segment(self.consumer,segment_grouped)
+        merged_data = keep_only_n_segment(merged_data,self.segment,n=100)
+        merged_data = merge_award(merged_data)
+        if save:
+            merged_data.to_csv("data/by_quarter.csv")
+        else:
+            return merged_data
+        
+    def by_segment(self,save=True):
+        merged_data = merge_consumer_segment(self.consumer,self.segment)
+        merged_data =  merge_award(merged_data)
+        merged_data =  merge_daily_demand(merged_data,self.segment)
+        merged_data = merge_counts(merged_data,self.segment)
+        if save:
+            print("saving data, please hold")
+            merged_data.to_csv("data/by_segment.csv")
+        else:
+            return merged_data
+    
+#################################################
+
+
+def get_consumer():
+    consumer = pd.read_csv("data/consumer/consumer.csv")
+    consumer['fiscal_quarter_invoice_date'] = pd.to_numeric(consumer.quarter) +1
+    consumer['fiscal_quarter_invoice_date'] = np.where(consumer['fiscal_quarter_invoice_date']==5, 1,consumer['fiscal_quarter_invoice_date'])
+    consumer['fiscal_year_invoice_date'] = pd.to_numeric(consumer.Year)
+    consumer['fiscal_year_invoice_date'] = np.where(consumer['fiscal_quarter_invoice_date']==1, consumer['fiscal_year_invoice_date'] +1,consumer['fiscal_year_invoice_date'])
+    return consumer
+
+
+
+
+def add_labels_segment(segment):
+    segment['DashCA'] = np.where(segment['fare_type']=='Dash CA', 1, 0)
+    segment['YCA'] = np.where(segment['fare_type']=='YCA', 1, 0)
+    segment['DG'] = np.where(segment['fare_type']=='DG', 1, 0)
+    segment['Other'] = np.where(segment['fare_type']=='Other', 1, 0)
+    segment['CPP Business'] = np.where(segment['fare_type']=='CPP Business', 1, 0)
+    segment['Business'] = np.where(segment['fare_type']=='Business', 1, 0)
+    segment['First'] = np.where(segment['fare_type']=='First', 1, 0)
+    segment['21 Days'] = np.where(segment['ticketing_adv_booking_group']=='21+ Days', 1, 0)
+    segment['count'] = 1
+    return segment
+
+
+
+def group_segment_by_quarter(segment):
+    segment = segment[segment.no_of_segments > 0]
+    seg = segment.groupby(by = ['fiscal_year_invoice_date','fiscal_quarter_invoice_date','city_pair_code'],as_index=False ).sum()
+    seg = seg[['fiscal_year_invoice_date','city_pair_code','fiscal_quarter_invoice_date','no_of_segments']]
+    seg2 = segment.groupby(by = ['fiscal_year_invoice_date','fiscal_quarter_invoice_date','city_pair_code'],as_index=False ).mean()
+    seg2 = seg2[['fiscal_year_invoice_date','fiscal_quarter_invoice_date','city_pair_code','DG','DashCA', 'YCA', '21 Days','paid_fare_including_taxes_and_fees']]
+    segTotal = pd.merge(seg,seg2,how='inner',on=['fiscal_year_invoice_date','fiscal_quarter_invoice_date','city_pair_code'])
+    return segTotal
+
+
+def merge_consumer_segment(consumer,segTotal):
+    consumer['city_pair_code'] = consumer.airport_1 + "-" + consumer.airport_2
+    segTotal1 = pd.merge(segTotal,consumer,how="inner", on=['fiscal_year_invoice_date','fiscal_quarter_invoice_date','city_pair_code'])
+    
+    consumer['city_pair_code'] = consumer.airport_2 + "-" + consumer.airport_1
+    segTotal2 = pd.merge(segTotal,consumer,how="inner", on=['fiscal_year_invoice_date','fiscal_quarter_invoice_date','city_pair_code'])
+
+
+    merged_data = segTotal1.append(segTotal2)
+    return merged_data
+
+def keep_only_n_segment(merged_data,segment,n=100):
+    seg = segment.groupby(by = ['city_pair_code'],as_index=False ).sum()
+    seg = seg[seg.no_of_segments > n]
+    seg = seg[['city_pair_code']]
+    seg['keep'] = 1
+    merged_data = pd.merge(merged_data,seg,how='inner',on='city_pair_code')
+    return merged_data
+
+
+def merge_award(merged_data):
+    awards= data.get(data="award")
+    awards['fiscal_year_invoice_date'] = awards.AWARD_YEAR 
+    awards['city_pair_code'] = awards.ORIGIN_AIRPORT_ABBREV + "-" + awards.DESTINATION_AIRPORT_ABBREV 
+    awards = awards.drop_duplicates(subset=['fiscal_quarter_invoice_date','AWARD_YEAR','city_pair_code'])
+    merged_data = pd.merge(merged_data,awards,how="inner",on=['city_pair_code','fiscal_year_invoice_date'])
+    merged_data['no_CA_award'] =np.where(merged_data['XCA_FARE']==0, 1, 0)
+    return merged_data
+
+
+def merge_daily_demand(merged_data,segment):
+    seg = segment.groupby(by = ['segment_departure_date','city_pair_code'],as_index=False ).sum()
+    seg = seg[['segment_departure_date','city_pair_code','no_of_segments']]
+    seg = seg.rename(columns={'no_of_segments':'daily_demand'})
+    merged_data = pd.merge(merged_data,seg,how='left',on=['segment_departure_date','city_pair_code'])
+    return merged_data
+
+def merge_counts(merged_data,segment):
+    grouped = segment.groupby(by = ['pnr'],as_index=False ).sum()
+    cols = ['pnr','DashCA','YCA','DG','Other','CPP Business','Business','First','count']
+    grouped = grouped[cols]
+    merged_data = pd.merge(merged_data,grouped,how='left',on='pnr')
+    return merged_data
+
+
+
