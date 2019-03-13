@@ -9,7 +9,7 @@ This code transforms all travel data into appropriate views for analysis. There 
 **by_segment:** flight route and cost by segement of trip 
 
 
-step 1. download data from drive
+step 1. download data from drive and insert data folder into repository
 
 step 2. ```python save_data.py```
 
