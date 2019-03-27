@@ -36,7 +36,6 @@ def get(save=True):
     email = get_email()
     total = merge_email_data(total,email)
     
-
     if save:
         total.to_csv("data/by_trip.csv")
     else:
@@ -46,7 +45,12 @@ def get(save=True):
 
 
 def get_reservation_data():
-    #main function to clean reservation data.
+    '''
+    main function to clean reservation data. This is tricky the row entity is not unique to a trip. 
+    there are sometimes mulltiple pnrs for a row. My idea was to reduce this down to one row one trip
+    ignore price since it will be wrong then and pull it as an aggregate of segment data, then we have where they travelle
+    to and how much and if they exchanged or returned thier ticket
+    '''
     reservations = data.get(data="reservation")
     exchanged = _get_if_ticket_was_exchanged(reservations)
     refund =  _get_if_ticket_was_returned(reservations)
@@ -98,7 +102,7 @@ def merge_email_data(reservations,email):
     reservations = reservations.rename(columns={"Employee Email Address":"EMAIL"})
     reservations['EMAIL'] = reservations['EMAIL'].str.lower()
     email['EMAIL'] = email['EMAIL'].str.lower()
-    reservations = pd.merge(reservations,email,how="inner", on =['FILEDATE','EMAIL'])
+    reservations = pd.merge(reservations,email,how="left", on =['FILEDATE','EMAIL'])
     return reservations
 
 

@@ -75,15 +75,22 @@ def group_segment_by_quarter(segment):
     return segTotal
 
 
-def merge_consumer_segment(consumer,segTotal):
+def merge_consumer_segment(consumer,segTotal,non_award=True):
     consumer['city_pair_code'] = consumer.airport_1 + "-" + consumer.airport_2
     segTotal1 = pd.merge(segTotal,consumer,how="inner", on=['fiscal_year_invoice_date','fiscal_quarter_invoice_date','city_pair_code'])
     
     consumer['city_pair_code'] = consumer.airport_2 + "-" + consumer.airport_1
     segTotal2 = pd.merge(segTotal,consumer,how="inner", on=['fiscal_year_invoice_date','fiscal_quarter_invoice_date','city_pair_code'])
 
-
+    
     merged_data = segTotal1.append(segTotal2)
+    if non_award:
+        a = segTotal1[list(segTotal.columns)].append(segTotal2[list(segTotal.columns)])
+        a = a.append(segTotal)
+        a = a.drop_duplicates(keep=False)
+        a['awarded'] = 0
+        merged_data['awarded'] = 1
+        merged_data = merged_data.append(a)
     return merged_data
 
 def keep_only_n_segment(merged_data,segment,n=100):
@@ -99,7 +106,7 @@ def merge_award(merged_data):
     awards= data.get(data="award")
     awards['fiscal_year_invoice_date'] = awards.AWARD_YEAR 
     awards['city_pair_code'] = awards.ORIGIN_AIRPORT_ABBREV + "-" + awards.DESTINATION_AIRPORT_ABBREV 
-    awards = awards.drop_duplicates(subset=['fiscal_quarter_invoice_date','AWARD_YEAR','city_pair_code'])
+    awards = awards.drop_duplicates(subset=['AWARD_YEAR','city_pair_code'])
     merged_data = pd.merge(merged_data,awards,how="inner",on=['city_pair_code','fiscal_year_invoice_date'])
     merged_data['no_CA_award'] =np.where(merged_data['XCA_FARE']==0, 1, 0)
     return merged_data
@@ -118,6 +125,4 @@ def merge_counts(merged_data,segment):
     grouped = grouped[cols]
     merged_data = pd.merge(merged_data,grouped,how='left',on='pnr')
     return merged_data
-
-
 
