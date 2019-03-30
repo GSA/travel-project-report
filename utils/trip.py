@@ -36,6 +36,13 @@ def get(save=True):
     email = get_email()
     total = merge_email_data(total,email)
     
+    #merge on amtrak data
+    amtrak = get_amtrak()
+    total = pd.merge(total, amtrak,how='left',on=['Travel Authorization Number'])
+    
+    #TO DO
+    #REONCILE NEW AMTRAK COLUMNS THAT SHOULD BE THE ON RESERVATION DATA
+
     if save:
         total.to_csv("data/by_trip.csv")
     else:
@@ -48,8 +55,8 @@ def get_reservation_data():
     '''
     main function to clean reservation data. This is tricky the row entity is not unique to a trip. 
     there are sometimes mulltiple pnrs for a row. My idea was to reduce this down to one row one trip
-    ignore price since it will be wrong then and pull it as an aggregate of segment data, then we have where they travelle
-    to and how much and if they exchanged or returned thier ticket
+    ignore price since it will be wrong and pull actual price as the aggregate of segment data, then we have where they travelle
+    to and how much. But we fail to capture exchanges and return so i add an indicator in later
     '''
     reservations = data.get(data="reservation")
     exchanged = _get_if_ticket_was_exchanged(reservations)
@@ -94,6 +101,13 @@ def get_email():
     df = df[cols]
     return df
 
+def get_amtrak():
+    #function that gets amtrak reservation data to merge on. the problem here is that we need to reconsile identical columns in reservation data
+    df = data.get(data="amtrak")
+    cleaned= amtrak_clean(df)
+    count_of_travelers  = _amtrak_get_counts_segments_by_traveller(df)
+    merged = pd.merge(cleaned,count_of_travelers,on="Travel Authorization Number", how='left')
+    return merged
 
 def merge_email_data(reservations,email):
     #this function merges on email demographics
@@ -150,3 +164,24 @@ def _get_finished_reservations(reservations,refund,exchange):
     reservations['exchange'] = reservations.exchange.fillna(0)
     return reservations
  
+
+####function for amtrak data 
+
+#counts number of segments the traveler took
+def _amtrak_get_counts_segments_by_traveller(df):
+    df['Travel Authorization Number'] = df['Travel Authorization Number'].fillna(method='ffill')
+    df['legs'] =1
+    cols = ['Travel Authorization Number','legs']  
+    df = df[cols]  
+    count_of_travelers = df.groupby(['Travel Authorization Number'],as_index=False).count()
+    return count_of_travelers
+
+# drops, takes only tickets with money, and drop duplicates taking the most recent ticket
+def amtrak_clean(df):
+    df = df.dropna(subset=['Travel Authorization Number'])
+    
+    df = df[df['Total Rail Amount'] > 0]  
+    df = df.drop_duplicates(subset=['Travel Authorization Number'],keep='last')
+    return df
+
+    

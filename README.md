@@ -1,5 +1,5 @@
 # travel-project-report
-This code transforms all travel data into appropriate views for analysis. There is  currently three views that can be downloaded.   
+This code transforms all travel data into appropriate views for analysis. There are currently three views that can be downloaded.   
 
 
 **by_quarter:** This data is aggregated by quarter. It mergges on consumer level travel data by DOT and merged on award data by city-pairs

@@ -26,6 +26,8 @@ def get(data):
         data_dict =   getFolderData("data/email/")
     elif data == "award":
         data_dict =   getFolderData("data/awards/")
+    elif data == "amtrak":
+        data_dict = getFolderData('data/amtrak/')
     else:
         print("please specify which data")
     df = pd.DataFrame()
