@@ -11,10 +11,10 @@ Created on Thu Mar 28 10:26:07 2019
 
 import statsmodels.formula.api as sm
 
-
+import numpy as np
 import pandas as pd
 
-segment  = pd.read_csv('/data/by_segment.csv')
+segment  = pd.read_csv('data/by_segment.csv')
 
 
 segment  = segment[segment['paid_fare_including_taxes_and_fees'] >0 ]
@@ -54,5 +54,100 @@ print(result.summary())
 #logistic regressions
 
 
+
+
+transactions = pd.read_csv('data/by_person.csv')
+
+transactions['total_variable_expense'] =  transactions['Charge Card Fees'] +transactions[ 'Laundry_total']+transactions['M&IE-PerDiem']+transactions[ 'Meals Actuals']+transactions['Misc Expense_total']+transactions['Parking_total']+transactions['Public Transportation_total']+transactions['Taxi_total']
+transactions['variable_cost_per_day'] = transactions['total_variable_expense'] / transactions['daysTravelled']
+
+transactions['misc_cost_per_day'] = transactions['Misc Expense_card'] / transactions['daysTravelled']
+transactions['misc_ratio'] =  transactions['Misc Expense_card']  / ( transactions['M&IE-PerDiem']+ transactions['Misc Expense_total']+ transactions['Meals Actuals']+)
+
+
+
+transactions['Taxi_per_day'] = transactions['Taxi_card'] / transactions['daysTravelled']
+
+transactions['Public_Transportation_cost_per_day'] = transactions['Public Transportation_card'] / transactions['daysTravelled']
+
+transactions['Parking_cost_per_day'] = transactions['Parking_card'] / transactions['daysTravelled']
+
+
+transactions['lodging_cost_per_day']  = transactions['Lodging_total'] / transactions['daysTravelled']
+
+
+
+cols = ['variable_cost_per_day', 'misc_ratio', 'misc_cost_per_day','lodging_cost_per_day','Public_Transportation_cost_per_day','Parking_cost_per_day','trip_count']
+df = transactions[cols]
+df = df.replace([np.inf, -np.inf], np.nan)
+df = df.dropna()
+result = sm.ols(formula = 'variable_cost_per_day ~ misc_ratio + lodging_cost_per_day + trip_count',data=df).fit()
+
+
+
+print(result.summary())
+
+total_fields= [
+ 'Communication Serv_total',
+ 'Laundry_total',
+ 'M&IE-PerDiem',
+ 'Meals Actuals',
+ 'Mileage - Private Airplane',
+ 'Mileage - Priv Auto (Advantageous)',
+ 'Mileage - Priv Auto (GOV Avail/Not Used)',
+ 'Mileage - Priv Motorcycle',
+ 'Misc Expense_total',
+ 'Registration Fees_total',
+ 'Rental Car_total',
+ 'Rental Car - Gasoline_total',
+ 'Rental Car - Optional Equipment',
+ 'Spec Med Needs Empl',
+ 'Service Fees',
+ 'Highway/Bridge Tolls_total',
+ 'Limousine Service',
+ 'Parking_total',
+ 'Public Transportation_total',
+ 'Seat Selection Fee',
+ 'Shuttle - Air',
+ 'Shuttle - Ground',
+ 'Taxi_total']
+
+card_fields = ['Airline Flight_card',
+ 'Communication Serv_card',
+ 'Highway/Bridge Tolls_card',
+ 'Laundry_card',
+ 'Misc Expense_card',
+ 'Parking_card',
+ 'Public Transportation_card',
+ 'Registration Fees_card',
+ 'Rental Car_card',
+ 'Rental Car - Gasoline_card',
+ 'Taxi_card']
+
+transactions['card_total'] = transactions[card_fields].sum(axis=1)
+
+transactions['total_cost'] = transactions[total_fields].sum(axis=1)
+
+
+transactions['total_ratio'] = transactions['card_total'] / transactions['total_cost']
+
+transactions['cost_per_day'] = transactions['total_cost'] / transactions['daysTravelled']
+transactions['card_per_day'] = transactions['card_total'] / transactions['daysTravelled']
+transactions['lodging_cost_per_day']  = transactions['Lodging_total'] / transactions['daysTravelled']
+
+
+transactions['log_card_per_day'] = np.log(transactions['card_per_day'])
+transactions['log_total_per_day'] = np.log(transactions['cost_per_day'])
+
+cols = ['cost_per_day','log_total_per_day','lodging_cost_per_day' ,'log_card_per_day','card_per_day', 'total_ratio','trip_count']
+df = transactions[cols]
+df = df.replace([np.inf, -np.inf], np.nan)
+df = df.dropna()
+
+df= df[df.total_ratio <= 1]
+result = sm.ols(formula = 'log_total_per_day ~ total_ratio + lodging_cost_per_day +trip_count',data=df).fit()
+print(result.summary())
+
+df.plot.scatter(x='total_ratio', y='log_total_per_day', c='DarkBlue')
 
 

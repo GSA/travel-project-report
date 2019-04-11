@@ -2,7 +2,7 @@
 
 
 
-from utils import segment, trip
+from utils import segment, trip, traveller
 
 #call the data class
 data = segment.get()
@@ -15,3 +15,6 @@ data.by_quarter()
 
 #gets trip specific view
 trip.get()
+
+#gets a traveller view by year, useful for credit card analysis
+traveller.get()

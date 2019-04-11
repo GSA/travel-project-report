@@ -7,12 +7,13 @@ Created on Mon Jan 28 10:13:12 2019
 
 
 import pandas as pd
-from utils import data
+from utils import data, train_plane
+
 
 
 
 #main function that merges on all data
-def get(save=True):
+def get(save=True,train=True):
     #get reservations
     reservations = get_reservation_data()
     reservations = reservations[data.cols_to_keep]
@@ -36,14 +37,24 @@ def get(save=True):
     email = get_email()
     total = merge_email_data(total,email)
     
-    #merge on amtrak data
-    amtrak = get_amtrak()
-    total = pd.merge(total, amtrak,how='left',on=['Travel Authorization Number'])
-    
+    #merge on amtrak data, but save seperatly cant reconsile atm
+    if train:
+        amtrak = get_amtrak()
+        train = pd.merge(total, amtrak,how='left',on=['Travel Authorization Number'])
+        train_plane.get(train)
     #TO DO
     #REONCILE NEW AMTRAK COLUMNS THAT SHOULD BE THE ON RESERVATION DATA
+    
+    # add lodging data
+    lodging= get_lodging_data()
+    total = pd.merge(total, lodging,left_on="pnr",right_on="Record Locator", how="left")
+
+    # add rental data
+    rentals= get_rental_data()
+    total = pd.merge(total, rentals,left_on="pnr",right_on="Record Locator", how="left")
 
     if save:
+        print("saving data")
         total.to_csv("data/by_trip.csv")
     else:
         return total
@@ -119,7 +130,70 @@ def merge_email_data(reservations,email):
     reservations = pd.merge(reservations,email,how="left", on =['FILEDATE','EMAIL'])
     return reservations
 
+def get_lodging_data():
 
+    lodging= data.get(data="lodging")
+    
+    lodging_g = lodging.groupby(by = ['Record Locator'],as_index=False).sum()
+    
+    cols =['Organization',
+     'Record Locator',
+     'Travel Authorization Number',
+     'Trip Status',
+     'Travel Configuration',
+     'Rule Class',
+     'Overall Trip Departure Date',
+     'Overall Trip Return Date',
+     'CONUS/OCONUS',
+     'ONLINE/OFFLINE',
+     'Booking Source',
+     'Itinerary Source',
+     'Hotel Reservation Start Date',
+     'Hotel Reservation End Date',
+     'Advance Purchase Window',
+     'Confirmation Number',
+     'Rate Code',
+     'Fedroom Rate IND',
+     'Hotel Property',
+     'Hotel Vendor',
+     'Hotel Vendor Family',
+     'Hotel Property Location',
+     'Hotel Property Country']
+    
+    lodging = lodging[cols]
+    lodging = lodging.drop_duplicates(subset=["Record Locator"])
+    lodging = pd.merge(lodging,lodging_g,on="Record Locator",how="left")
+    return lodging
+
+def get_rental_data():
+    rentals = data.get(data="rental_car")
+    
+    rentals_g = rentals.groupby(by = ['Record Locator'],as_index=False).sum()
+    
+    cols = ['Organization',
+     'Record Locator',
+     'Travel Authorization Number',
+     'Trip Status',
+     'Travel Configuration',
+     'Rule Class',
+     'Overall Trip Departure Date',
+     'Overall Trip Return Date',
+     'CONUS/OCONUS',
+     'ONLINE/OFFLINE',
+     'Booking Source',
+     'Itinerary Source',
+     'Confirmation Number',
+     'Reservation Start Date',
+     'Reservation End Date',
+     'Rental Car Vendor',
+     'Rental Car Type',
+     'Rental Car City/Location',
+     'Rental Car Country']  
+    
+    rentals = rentals[cols]
+    rentals = rentals.drop_duplicates(subset=["Record Locator"])
+    rentals = pd.merge(rentals,rentals_g,on="Record Locator",how="left")
+    return rentals
 ############# function to clean data ##########################################
 ###############################################################################
 
@@ -165,7 +239,7 @@ def _get_finished_reservations(reservations,refund,exchange):
     return reservations
  
 
-####function for amtrak data 
+####functions for amtrak data 
 
 #counts number of segments the traveler took
 def _amtrak_get_counts_segments_by_traveller(df):
