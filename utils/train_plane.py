@@ -17,7 +17,8 @@ def get(df):
     cities = get_unique_city_list(df)
     df = merge_records(df,cities)
     df = get_city_pair(df)
-    df =df[cols]
+    df = merge_miles(df)
+    #df =df[cols]
     df.to_csv("data/train_plane.csv")
     
 def keep_certain(df):
@@ -42,6 +43,9 @@ def apply_new_columns(df):
     df['departure_combined'] = df['origin_city_name'].fillna(df['Departure Location'])
     df['arrival_combined'] = df['destination_city_name'].fillna(df['Arrival Location'])
     
+    df["departure_combined"]= df["departure_combined"].replace("NEW YORK, NEW YORK, US", "New York, NY") 
+    df["arrival_combined"]= df["arrival_combined"].replace("NEW YORK, NEW YORK, US", "New York, NY") 
+   
     
     df['segments_combined'] = df['number_of_segments'].fillna(df['legs'])
     
@@ -60,6 +64,16 @@ def get_unique_city_list(df):
     return records
 
 
+from geopy.geocoders import Nominatim
+geolocator = Nominatim(user_agent="specify_your_app_name_here")
+from geopy.distance import geodesic
+
+def lat_and_long(city):
+    try:
+        location = geolocator.geocode(city) 
+        return location.latitude, location.longitude
+    except:
+        return None, None
 
 def get_clean_cities(city):
     try:
@@ -68,13 +82,36 @@ def get_clean_cities(city):
     except:
         return "no place matched"
 
+
+def get_distance(lat1,long1,lat2,long2):  
+    city1 = (lat1,long1)
+    city2 = (lat2,long2)
+    try:
+        miles = geodesic(city1, city2).miles
+        print(miles)
+        print(city1,city2)
+    except:
+        miles= None
+    return miles
+
+def merge_miles(df):
+    cities = pd.DataFrame(np.unique(df[['lat_a','long_a','lat_d','long_d']],axis=0))
+    cities = cities.rename(columns={0:'lat_a',1:'long_a',2:'lat_d',3:'long_d'})
+    cities['miles'] = cities.apply(lambda x: get_distance(x.lat_a, x.long_a,x.lat_d,x.long_d), axis=1)
+    df = pd.merge(df,cities,on=['lat_a','long_a','lat_d','long_d'],how='left')
+    return df
+
 def merge_records(df,records):
     records['departure_clean'] = records[0].apply(get_clean_cities)
+    records[['lat_d','long_d']] = records[0].apply(lat_and_long).apply(pd.Series)
     records = records.rename(columns={0:'departure_combined'})
     df = pd.merge(df,records,on="departure_combined",how='left')
     
-    records = records.rename(columns={'departure_combined':'arrival_combined','departure_clean':'arrival_clean'})
+    
+    records = records.rename(columns={'departure_combined':'arrival_combined','departure_clean':'arrival_clean','lat_d':'lat_a','long_d':'long_a'})
+    
     df = pd.merge(df,records,on="arrival_combined",how='left')
+    
     return df
 
 
@@ -82,7 +119,7 @@ def get_city_pair(df):
     print("getting unique city pair, this takes a little time, janky code")
     for index, row  in df.iterrows():
         try:
-            city_sorted = sorted(list([str(row['departure_combined']),str(row['arrival_combined'])]))
+            city_sorted = sorted(list([str(row['departure_clean']),str(row['arrival_clean'])]))
             city_pair = "-".join(str(e)for e in city_sorted)
             df.loc[index,'city_pair'] = city_pair
         except:
@@ -148,11 +185,22 @@ cols=['fare_type',
 'traineDif',
 'departure_combined',
 'arrival_combined',
-'segments_combined']
+'departue_clean',
+'arrival_clean',
+'segments_combined',
+'fare_combined',
+'city_pair',
+'miles',
+'lat_a',
+'long_a',
+'lat_d',
+'long_d']
 
 if __name__ == "__main__":
-    try:
-        df = pd.read_csv("data/by_trip.csv")
-    except:
-       print('no by_trip.csv file') 
-    df = get(df)
+    import trip
+    amtrak = trip.get_amtrak()
+    df = pd.read_csv("data/by_trip.csv")
+    train = pd.merge(df, amtrak,how='left',on=['Travel Authorization Number'])
+    get(train)
+ 
+    

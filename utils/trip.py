@@ -37,14 +37,14 @@ def get(save=True,train=True):
     email = get_email()
     total = merge_email_data(total,email)
     
-    #merge on amtrak data, but save seperatly cant reconsile atm
+    #merge on amtrak data, but save seperatly cant reconcile, atm
     if train:
+        print("saving amtrak csv")
         amtrak = get_amtrak()
         train = pd.merge(total, amtrak,how='left',on=['Travel Authorization Number'])
         train_plane.get(train)
-    #TO DO
-    #REONCILE NEW AMTRAK COLUMNS THAT SHOULD BE THE ON RESERVATION DATA
-    
+   
+  
     # add lodging data
     lodging= get_lodging_data()
     total = pd.merge(total, lodging,left_on="pnr",right_on="Record Locator", how="left")
@@ -92,7 +92,7 @@ def get_segment_data():
     return segment_aggregated
 
 def get_travel_auth_to_pnr():
-    #this get travel authorization number to pnr. we need this because voucher doesnt use pnr
+    #this get travel authorization number to pnr. we need this because voucher data doesnt use pnr as an indentifier
     cost = data.get(data="cost")
     cols= ['Travel Authorization Number','Record Locator','Total Paid(Incl Credits or Fees)']
     cost = cost[cols]
@@ -122,7 +122,7 @@ def get_amtrak():
 
 def merge_email_data(reservations,email):
     #this function merges on email demographics
-    reservations['FILEDATE'] = "20" + reservations["ticket_departure_date"].str[-2:]
+    reservations['FILEDATE'] = "20" + reservations["Trip Departure Date"].str[-2:]
     reservations['FILEDATE'] =  pd.to_numeric(reservations.FILEDATE)
     reservations = reservations.rename(columns={"Employee Email Address":"EMAIL"})
     reservations['EMAIL'] = reservations['EMAIL'].str.lower()

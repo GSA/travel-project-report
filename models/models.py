@@ -14,66 +14,157 @@ import statsmodels.formula.api as sm
 import numpy as np
 import pandas as pd
 
-segment  = pd.read_csv('data/by_segment.csv')
 
 
-segment  = segment[segment['paid_fare_including_taxes_and_fees'] >0 ]
 
-#cornerstone can not get accurate segment data when they have split fare_types 
-#i removed them here
-segment  = segment[segment.YCA_y != 1 ]
-segment  = segment[segment.DashCA_y != 1 ]
+class Segment():
+    
+    def __init__(self):
+        '''
+        any fields that need to be created for the overall data, do not remove/subset change data here
+        
+        '''
+        data  = pd.read_csv('data/by_segment.csv')
 
-#only take flights with a simple go and return trip
-segment  = segment[segment.count_y == 2 ]
+        #calculate dash CA contract per mile
+        data['dash_per_mile'] = data.XCA_FARE / data.nsmiles
+        
+        #calculate yca per mile
+        data['YCA_per_mile'] = data.YCA_FARE / data.nsmiles
+        
+        #calculate actual cost per mile travelled
+        data['cost_per_mile'] = data.paid_fare_including_taxes_and_fees / data.nsmiles
+        
+        #calculate ratio of XCA to YCA contract 
+        data['city_pair_ratio'] = data.dash_per_mile / data.YCA_per_mile
 
-#only flights where city pair has awarded a contract
-segment  = segment[segment.awarded ==1 ]
 
-#calculate dash CA contract per mile
-segment['dash_per_mile'] = segment.XCA_FARE / segment.nsmiles
 
-#calculate yca per mile
-segment['YCA_per_mile'] = segment.YCA_FARE / segment.nsmiles
+        self.data = data
 
-#calculate actual cost per mile travelled
-segment['cost_per_mile'] = segment.paid_fare_including_taxes_and_fees / segment.nsmiles
+    class model_1(object):
+        '''
+        Model 1 looks at the ratio of YCA fare to XCA fare and the effect on price
+        '''
+        def __init__(self):
+            '''
+            
+            This is the logic for data subsetting and any changes to the data
+            '''
+            print("preparing data")
+            data = Segment().data
+            
+            # only took fares with actual cost
+            data  = data[data['paid_fare_including_taxes_and_fees'] >0 ]
 
-#calculate ratio of XCA to YCA contract 
-segment['city_pair_ratio'] = segment.dash_per_mile / segment.YCA_per_mile
+            #cornerstone can not get accurate segment data when they have split fare_types 
+            #i removed them here so i only take
+            data  = data[data.YCA_y != 1 ]
+            data = data[data.DashCA_y != 1 ]
+            
+            #only take flights with a simple go and return trip
+            data  = data[data.count_y == 2 ]
+            
+            #only flights where city pair has awarded a contract
+            data  = data[data.awarded ==1 ]   
+            
+            #filter for coach fares
+            fare = ['YCA','Dash CA','Other','DG']
+            data = data[data.fare_type.isin(fare)]
+            
+            #take only city pairs with atleast 50 flights
+            df_g = data
+            df_g['ticket'] = 1
+            df_g = df_g[['city_pair_code','ticket']]
+            df_g = df_g.groupby(by ='city_pair_code',as_index=False).sum()
+            a = df_g[df_g.ticket > 50]
+            codes = list(a.city_pair_code)
+            data = data[data.city_pair_code.isin(codes)]
+            
+            self.model_data = data
+    
+        def regression_1(self):
+            '''
+            
+            
+            '''
+            result = sm.ols(formula = 'cost_per_mile ~ city_pair_ratio +no_CA_award + fare_type + city_pair_code',data=self.model_data).fit()
+            #print(result.summary())
+            return result
 
-#filter for coach fares
-fare = ['YCA','Dash CA','Other','DG']
-segment = segment[segment.fare_type.isin(fare)]
 
-#regression on cost_per_mile
-result = sm.ols(formula = 'cost_per_mile ~ city_pair_ratio + fare_type + segment_refund_indicator + ticket_exchange_indicator + ticketing_adv_booking_group + fare_type*ticketing_adv_booking_group + airline_carrier + city_pair_code',data=segment).fit()
-print(result.summary())
+        def regression_2(self):
+            result = sm.ols(formula = 'cost_per_mile ~ city_pair_ratio + fare_type + no_CA_award + ticketing_adv_booking_group ' ,data=self.model_data).fit()
+            #print(result.summary())
+            return result
+
+        def regression_3(self):
+            '''
+            
+            
+            '''
+            result = sm.ols(formula = 'cost_per_mile ~ city_pair_ratio + fare_type + fare_type*city_pair_ratio  + ticketing_adv_booking_group  + airline_carrier + city_pair_code',data=self.model_data).fit()
+            #print(result.summary())
+            return result
+
+        def regression_4(self):
+            '''
+            
+            
+            '''
+            result = sm.ols(formula = 'cost_per_mile ~ city_pair_ratio + fare_type + fare_type*city_pair_ratio + no_CA_award + ticketing_adv_booking_group + + airline_carrier + ticketing_adv_booking_group*fare_type + city_pair_code',data=self.model_data).fit()
+            #print(result.summary())
+            return result
+
+
+
+
+
+
+
+
+model = Segment().model_1()      
+res1 = model.regression_1()
+res2 = model.regression_2()
+res3 = model.regression_3()
+res4 = model.regression_4()
+
+from statsmodels.iolib.summary2 import summary_col
+dfoutput = summary_col([res1,res2,res3,res4],stars=True)
+print(dfoutput)
+
 
 
 #logistic regressions
 
 
+class transactions:
+    def __init__(self):
+        
+        self.transactions = pd.read_csv('data/by_person.csv')
+
+    def prepare(self):
+        transactions = self.transactions
+        #calculate vairable expenses
+        transactions['total_variable_expense'] =  transactions['Charge Card Fees'] +transactions[ 'Laundry_total']+transactions['M&IE-PerDiem']+transactions[ 'Meals Actuals']+transactions['Misc Expense_total']+transactions['Parking_total']+transactions['Public Transportation_total']+transactions['Taxi_total']
+        transactions['variable_cost_per_day'] = transactions['total_variable_expense'] / transactions['daysTravelled']
+        
+        #calculate only misc expenses
+        transactions['misc_cost_per_day'] = transactions['Misc Expense_card'] / transactions['daysTravelled']
+        transactions['misc_ratio'] =  transactions['Misc Expense_card']  / ( transactions['M&IE-PerDiem']+ transactions['Misc Expense_total']+ transactions['Meals Actuals'])
 
 
-transactions = pd.read_csv('data/by_person.csv')
+        #caluclate Taxi cost per day
+        transactions['Taxi_per_day'] = transactions['Taxi_card'] / transactions['daysTravelled']
+        
+        #calculate Pub lic transportation cost per data
+        transactions['Public_Transpxortation_cost_per_day'] = transactions['Public Transportation_card'] / transactions['daysTravelled']
+        
+        #parking cost per day
+        transactions['Parking_cost_per_day'] = transactions['Parking_card'] / transactions['daysTravelled']
 
-transactions['total_variable_expense'] =  transactions['Charge Card Fees'] +transactions[ 'Laundry_total']+transactions['M&IE-PerDiem']+transactions[ 'Meals Actuals']+transactions['Misc Expense_total']+transactions['Parking_total']+transactions['Public Transportation_total']+transactions['Taxi_total']
-transactions['variable_cost_per_day'] = transactions['total_variable_expense'] / transactions['daysTravelled']
-
-transactions['misc_cost_per_day'] = transactions['Misc Expense_card'] / transactions['daysTravelled']
-transactions['misc_ratio'] =  transactions['Misc Expense_card']  / ( transactions['M&IE-PerDiem']+ transactions['Misc Expense_total']+ transactions['Meals Actuals']+)
-
-
-
-transactions['Taxi_per_day'] = transactions['Taxi_card'] / transactions['daysTravelled']
-
-transactions['Public_Transportation_cost_per_day'] = transactions['Public Transportation_card'] / transactions['daysTravelled']
-
-transactions['Parking_cost_per_day'] = transactions['Parking_card'] / transactions['daysTravelled']
-
-
-transactions['lodging_cost_per_day']  = transactions['Lodging_total'] / transactions['daysTravelled']
+        #lodging cost per day
+        transactions['lodging_cost_per_day']  = transactions['Lodging_total'] / transactions['daysTravelled']
 
 
 
@@ -149,5 +240,140 @@ result = sm.ols(formula = 'log_total_per_day ~ total_ratio + lodging_cost_per_da
 print(result.summary())
 
 df.plot.scatter(x='total_ratio', y='log_total_per_day', c='DarkBlue')
+
+
+
+df= pd.read_csv('data/by_trip.csv')
+
+
+
+
+
+
+df = pd.read_csv('data/train_plane.csv')       
+train = df[df.train == 1]  
+train_g = train.groupby(by='city_pair',as_index=False).sum()
+train_g = train_g[['city_pair','train']]
+plane = df[df.plane ==1]
+plane_g = plane.groupby(by='city_pair',as_index=False).sum()
+plane_g = plane_g[['city_pair','plane']]
+
+merged = pd.merge(plane_g,train_g,on='city_pair',how='inner')
+
+
+a = merged[(merged.plane >= 15) & (merged.train >= 15)]
+
+df = pd.merge(df,a,on='city_pair',how='inner')
+
+df = df[df.fare_combined >0]
+
+
+
+df = df[df.segments_combined == 2]
+
+
+
+df['type'] = df['fare_type'].fillna(df['Class of Service'])
+
+
+df['type'] = df["type"].replace(1, "Train") 
+fare = ['YCA','Dash CA','DG','Acela Business Class Seat', 'Coach Reserved Seat']
+df = df[df.type.isin(fare)]
+
+
+
+df['grade'] = df.GRADE_CODE.str[:2]
+
+
+route = ['New York-Washington','Philadelphia-Richmond','Boston-New York']
+df = df[df.city_pair.isin(route)]
+
+result = sm.ols(formula = 'fare_combined ~ type + trip_duration + grade',data=df).fit()
+print(result.summary())
+
+result = sm.ols(formula = 'fare_combined ~ train_x ',data=df).fit()
+print(result.summary())
+
+
+gradeKeep = ['11','12','13','14','15']
+df_grade = df[df.grade.isin(gradeKeep)]
+
+result = sm.ols(formula = 'train_x ~ grade + city_pair',data=df_grade).fit()
+print(result.summary())
+
+
+df = df.fillna(0)
+travel_cost =[ 'Mileage - Private Airplane',
+ 'Mileage - Priv Auto (Advantageous)',
+ 'Mileage - Priv Auto (GOV Avail/Not Used)',
+ 'Mileage - Priv Motorcycle',
+ 'Misc Expense',
+ 'Registration Fees',
+ 'Rental Car',
+ 'Rental Car - Gasoline',
+ 'Rental Car - Optional Equipment',
+ 'Spec Med Needs Empl',
+ 'Service Fees',
+ 'Highway/Bridge Tolls',
+ 'Limousine Service',
+ 'Parking',
+ 'Public Transportation',
+ 'Seat Selection Fee',
+ 'Shuttle - Air',
+ 'Shuttle - Ground',
+ 'Taxi',
+ 'fare_combined']
+df['variable_travel_cost'] = df[travel_cost].sum(axis=1)
+
+
+result = sm.ols(formula = 'variable_travel_cost ~ type + trip_duration',data=df).fit()
+print(result.summary())
+result = sm.ols(formula = 'variable_travel_cost ~ train_x + trip_duration',data=df).fit()
+print(result.summary())
+
+
+train['classS']= train['Class of Service']
+train = train[train.segments_combined == 2]
+train = train[train.traineDif > 0]
+
+
+
+result = sm.ols(formula = 'fare_combined ~ traineDif + classS + miles',data=regDF).fit()
+print(result.summary())
+
+
+
+df = pd.read_csv('data/by_trip.csv')
+
+df['travel_fees'] = df['Travel Transxn Fees']
+cols =['travel_fees','self_booking_indicator', 'GRADE_CODE', 'refund','exchange']
+reg = df[cols]
+
+reg = reg.dropna()
+reg = reg[reg.GRADE_CODE != '0']
+
+
+result = sm.ols(formula = 'travel_fees ~ self_booking_indicator + GRADE_CODE + refund + exchange',data=reg).fit()
+print(result.summary())
+
+df['airline_total'] = df['Travel Transxn Fees'] + df['paid_fare_including_taxes_and_fees']
+cols =['airline_total','self_booking_indicator', 'GRADE_CODE', 'refund','exchange','trip_duration']
+
+reg = df[cols]
+
+reg = reg.dropna()
+reg = reg[reg.GRADE_CODE != '0']
+
+reg['no_travel'] = np.where(reg['trip_duration']==0, 1, 0)
+
+
+result = sm.ols(formula = 'airline_total ~ self_booking_indicator + GRADE_CODE + refund + exchange',data=reg).fit()
+print(result.summary())
+
+reg['no_travel'] = np.where(reg['trip_duration']==0, 1, 0)
+
+result = sm.ols(formula = 'airline_total ~ city_pair_code +self_booking_indicator + trip_duration + number_of_segments + refund + exchange + total_flight_miles  ',data=df).fit()
+print(result.summary())
+
 
 

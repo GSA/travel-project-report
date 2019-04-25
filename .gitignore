@@ -10,6 +10,7 @@ __pycache__/
 .Rhistory
 .Rapp.history
 
+.DS_Store
 
 # Distribution / packaging
 .Python

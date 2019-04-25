@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "7694323bb7882f00df3400d953c69e3924e562aa0708ea434d0467a28cd2523f"
+            "sha256": "e80665c700f0574c6550a9d8b326f158c9480e9cea24cdadf2e4b1924646650e"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,6 +16,20 @@
         ]
     },
     "default": {
+        "geographiclib": {
+            "hashes": [
+                "sha256:635da648fce80a57b81b28875d103dacf7deb12a3f5f7387ba7d39c51e096533"
+            ],
+            "version": "==1.49"
+        },
+        "geopy": {
+            "hashes": [
+                "sha256:9b23b6f45fb3a60d3d5d6c17dd9c2321fec990bf43d21b1f01bfcc2f062b6dea",
+                "sha256:d2fc0dc79572f5acbcf7e48af1233ac8033079ddb15cae538b9dd03587436de5"
+            ],
+            "index": "pypi",
+            "version": "==1.19.0"
+        },
         "geotext": {
             "hashes": [
                 "sha256:0ba5aa03db8246a8f77f9a334e79bc1f5875b38fd63589f0be4c83c1d94c52fd",
@@ -151,7 +165,6 @@
                 "sha256:d0fc7a286feac9077ec52a927fc9fe8fe2fabab95426722be4c953c9a8bede92",
                 "sha256:ddc34786490a6e4ec0a855d401034cbd1242ef186c20d79d2166d6a4bd449577",
                 "sha256:e34b155e36fa9da7e1b7c738ed7767fc9491a62ec6af70fe9da4a057759edc2d",
-                "sha256:e4c03470edb51f4cf449e03a37cbded5780109f4c7aa4d0205bbbe30b1a5f2a2",
                 "sha256:e5b9e8f6bda48460b7b143c3821b21b452cb3a835e6bbd5dd33aa0c8d3f5137d",
                 "sha256:e81ebf6c5ee9684be8f2c87563880f93eedd56dd2b6146d8a725b50b7e5adb0f",
                 "sha256:eb91be369f945f10d3a49f5f9be8b3d0b93a4c2be8f8a5b83b0571b8123e0a7a",
@@ -208,8 +221,7 @@
         },
         "wrapt": {
             "hashes": [
-                "sha256:4aea003270831cceb8a90ff27c4031da6ead7ec1886023b80ce0dfe0adf61533",
-                "sha256:7fe2e6c5fe292cfdeb9614f6f66a2acc08ac1f14adfd87eae6a771b8405eb960"
+                "sha256:4aea003270831cceb8a90ff27c4031da6ead7ec1886023b80ce0dfe0adf61533"
             ],
             "version": "==1.11.1"
         }
