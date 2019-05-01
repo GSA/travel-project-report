@@ -8,8 +8,26 @@ This code transforms all travel data into appropriate views for analysis. There 
 
 **by_segment:** flight route and cost by segement of trip 
 
+**by_person:** this data is aggregated by person by year.  It is good for analysis with credit card transactions
 
-step 1. download data from drive and insert data folder into repository
 
-step 2. ```python save_data.py```
+
+### if you want to run the whole program 
+step 1. clone repo
+
+step 2. download data from drive and insert data folder into repository
+
+step 3. ```pipenv install```
+```pipenv shell``` 
+```pipenv run python save_data.py```
+          
+          
+
+
+### if you want to just do analysis
+
+step 1. clone repo
+
+step 2. download data from drive and insert data folder into repository
+
 
