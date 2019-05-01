@@ -175,26 +175,31 @@ class Transactions():
    
         
         #calculate vairable expenses
-        transactions['total_variable_expense'] =  transactions['Charge Card Fees'] +transactions[ 'Laundry_total']+transactions['M&IE-PerDiem']+transactions[ 'Meals Actuals']+transactions['Misc Expense_total']+transactions['Parking_total']+transactions['Public Transportation_total']+transactions['Taxi_total']
+        transactions['total_variable_expense'] =  transactions['Charge Card Fees'] +transactions[ 'Laundry_total']+transactions['M&IE-PerDiem_total']+transactions[ 'Meals Actuals']+transactions['Misc Expense_total']+transactions['Parking_total']+transactions['Public Transportation_total']+transactions['Taxi_total']
         transactions['variable_cost_per_day'] = transactions['total_variable_expense'] / transactions['daysTravelled']
         
         #calculate only misc expenses
-        transactions['misc_cost_per_day'] = transactions['Misc Expense_card'] / transactions['daysTravelled']
-        transactions['misc_ratio'] =  transactions['Misc Expense_card']  / ( transactions['M&IE-PerDiem']+ transactions['Misc Expense_total']+ transactions['Meals Actuals'])
-
-
+        transactions['misc_card_per_day'] = transactions['Misc Expense_card'] + transactions['M&IE-PerDiem_card'] / transactions['daysTravelled']
+        transactions['misc_ratio'] =  transactions['Misc Expense_card']  / ( transactions['M&IE-PerDiem_total']+ transactions['Misc Expense_total']+ transactions['Meals Actuals'])
+        
+        transactions['M&IE_card_per_day'] =  transactions['M&IE-PerDiem_card'] / transactions['daysTravelled']
+        transactions['M&IE_cost_per_day'] =  transactions['M&IE-PerDiem_total'] / transactions['daysTravelled']
+        
         #caluclate Taxi cost per day
-        transactions['Taxi_per_day'] = transactions['Taxi_card'] / transactions['daysTravelled']
+        transactions['Taxi_card_per_day'] = transactions['Taxi_card'] / transactions['daysTravelled']
         
         #calculate Pub lic transportation cost per data
-        transactions['Public_Transportation_cost_per_day'] = transactions['Public Transportation_card'] / transactions['daysTravelled']
+        transactions['Public_card_Transportation_per_day'] = transactions['Public Transportation_card'] / transactions['daysTravelled']
         
         #parking cost per day
-        transactions['Parking_cost_per_day'] = transactions['Parking_card'] / transactions['daysTravelled']
+        transactions['Parking_card_per_day'] = transactions['Parking_card'] / transactions['daysTravelled']
 
         #lodging cost per day
         transactions['lodging_cost_per_day']  = transactions['Lodging_total'] / transactions['daysTravelled']
-
+        
+         #lodging cost per day
+        transactions['lodging_card_per_day']  = transactions['Lodging_card'] / transactions['daysTravelled']
+        
         #creat column that creats all cost on card total
         transactions['card_total'] = transactions[transaction_columns['card_fields']].sum(axis=1)
         
@@ -212,6 +217,9 @@ class Transactions():
         #log cost and card per day
         transactions['log_card_per_day'] = np.log(transactions['card_per_day'])
         transactions['log_total_per_day'] = np.log(transactions['cost_per_day'])
+        
+        #if credit card was not used a 0 for all fields
+        transactions= transactions.fillna(0)
         return transactions
     
     def __str__(self):
@@ -226,13 +234,13 @@ class Transactions():
         summary of what we expect from this model
         '''
         def __init__(self):
-            self.data = Transactions().prepare()
+            self.model_data = Transactions().prepare()
             '''
             any modifications for just this model here
             '''
         def regression_1(self):
             cols = ['variable_cost_per_day', 'misc_ratio', 'misc_cost_per_day','lodging_cost_per_day','Public_Transportation_cost_per_day','Parking_cost_per_day','trip_count']
-            df = self.data[cols]
+            df = self.model_data[cols]
             df = df.replace([np.inf, -np.inf], np.nan)
             df = df.dropna()
             result = sm.ols(formula = 'variable_cost_per_day ~ misc_ratio + lodging_cost_per_day + trip_count',data=df).fit()
@@ -244,7 +252,7 @@ class Transactions():
            
             
             cols = ['cost_per_day','log_total_per_day','lodging_cost_per_day' ,'log_card_per_day','card_per_day', 'total_ratio','trip_count']
-            df = self.data[cols]
+            df = self.model_data[cols]
             df = df.replace([np.inf, -np.inf], np.nan)
             df = df.dropna()
             
@@ -256,7 +264,7 @@ class Transactions():
 
         def graph(self):
             graphs = {}
-            one = self.data.plot.scatter(x='total_ratio', y='log_total_per_day', c='DarkBlue')
+            one = self.model_data.plot.scatter(x='total_ratio', y='log_total_per_day', c='DarkBlue')
             graphs.update({"scatter":one})
             return graphs
 

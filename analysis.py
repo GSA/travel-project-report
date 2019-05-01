@@ -7,7 +7,8 @@ Created on Tue Apr 30 11:38:17 2019
 """
 
 
-from models.models import Segment
+from models.models import Segment , Transactions, Train_Plane, Trip
+
 import statsmodels.formula.api as sm
 import statsmodels.api as sm2
 import matplotlib.pyplot as plt
@@ -22,7 +23,7 @@ seg
 print(seg)
 
 #need help interpreting columns
-seg.describe("cost_per_mile")
+seg.describe("")
 
 
 #lets look at model 1
@@ -56,8 +57,19 @@ print(dfoutput)
 fig = plt.figure(figsize=(15,8))
 fig = sm2.graphics.plot_regress_exog(res4, "city_pair_ratio", fig=fig)
 
+
 model.model_data.plot.scatter(x='large_ms', y='cost_per_mile', c='DarkBlue')
 
 
 
+
+card = Transactions()
+
+model = card.model_1()
+
+#what are we doing with this model
+print(model)
+
+#this is the data we are using 
+df = model.model_data
 

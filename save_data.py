@@ -14,7 +14,7 @@ from utils import segment, trip, traveller
 #data.by_quarter()
 
 #gets trip specific view
-trip.get()
+#trip.get()
 
 #gets a traveller view by year, useful for credit card analysis
-#traveller.get()
+traveller.get()

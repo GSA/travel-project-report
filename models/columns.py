@@ -142,7 +142,7 @@ transaction_columns= {
 'total_fields' : [
  'Communication Serv_total',
  'Laundry_total',
- 'M&IE-PerDiem',
+ 'M&IE-PerDiem_total',
  'Meals Actuals',
  'Mileage - Private Airplane',
  'Mileage - Priv Auto (Advantageous)',
@@ -165,6 +165,7 @@ transaction_columns= {
  'Taxi_total'],
 
 'card_fields' : ['Airline Flight_card',
+    'M&IE-PerDiem_card',
  'Communication Serv_card',
  'Highway/Bridge Tolls_card',
  'Laundry_card',
