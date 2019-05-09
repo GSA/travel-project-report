@@ -12,7 +12,7 @@ Created on Thu Mar 28 10:26:07 2019
 import statsmodels.formula.api as sm
 import numpy as np
 import pandas as pd
-from models.columns import  segment_columns , transaction_columns, aggregate_fields
+from models.columns import  segment_columns , transaction_columns, aggregate_fields,trip_columns
 
 
 
@@ -247,8 +247,28 @@ class Transactions():
             graphs = {}
             return graphs
 
+    class model_2(object):
+        def __init__(self):
+            transactions = Transactions().prepare()
+            cols_to_keep = Transactions().columns_to_keep()
+            transactions = transactions[cols_to_keep]
+            
+            trip = Trip().prepare()
+            
+            transactions = transactions[transactions.trip_count ==1]
+            trip['invoice_date'] = pd.to_datetime(trip.invoice_date)
 
-
+            trip['fiscal_year'] = trip.invoice_date.apply(pd.Period, freq='A-SEP').dt.year
+            transactions['fiscal_year'] = pd.to_datetime(transactions['FY'],format='%Y').dt.year
+            
+            self.model_data = pd.merge(transactions,trip[trip_columns],left_on=['Employee Email Address','FY'],right_on=['EMAIL','fiscal_year'],how='inner')
+            
+        def regression_1(self):
+            None
+        
+        def regression_2(self):   
+            
+            None
 
 class Train_Plane:
    

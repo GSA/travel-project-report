@@ -24,6 +24,7 @@ def get(save=True):
         merged.to_csv('data/by_person.csv')
     else:
         return merged
+
     
 def clean_vouchers(voucher):
     # drop duplicates
