@@ -12,7 +12,7 @@ Created on Thu Mar 28 10:26:07 2019
 import statsmodels.formula.api as sm
 import numpy as np
 import pandas as pd
-from models.columns import  segment_columns , transaction_columns
+from models.columns import  segment_columns , transaction_columns, aggregate_fields
 
 
 
@@ -169,103 +169,82 @@ class Segment():
 class Transactions():
     
     def prepare(self):
+        '''
+        data prep work, use this space to construct all new variables 
+        
+        '''
         
         transactions = pd.read_csv('data/by_person.csv')
-
-   
         
-        #calculate vairable expenses
-        transactions['total_variable_expense'] =  transactions['Charge Card Fees'] +transactions[ 'Laundry_total']+transactions['M&IE-PerDiem_total']+transactions[ 'Meals Actuals']+transactions['Misc Expense_total']+transactions['Parking_total']+transactions['Public Transportation_total']+transactions['Taxi_total']
-        transactions['variable_cost_per_day'] = transactions['total_variable_expense'] / transactions['daysTravelled']
+        #true days of travel started at 0. 
+        transactions['days'] = transactions.daysTravelled + (1*transactions.trip_count)
         
-        #calculate only misc expenses
-        transactions['misc_card_per_day'] = transactions['Misc Expense_card'] + transactions['M&IE-PerDiem_card'] / transactions['daysTravelled']
-        transactions['misc_ratio'] =  transactions['Misc Expense_card']  / ( transactions['M&IE-PerDiem_total']+ transactions['Misc Expense_total']+ transactions['Meals Actuals'])
-        
-        transactions['M&IE_card_per_day'] =  transactions['M&IE-PerDiem_card'] / transactions['daysTravelled']
-        transactions['M&IE_cost_per_day'] =  transactions['M&IE-PerDiem_total'] / transactions['daysTravelled']
-        
-        #caluclate Taxi cost per day
-        transactions['Taxi_card_per_day'] = transactions['Taxi_card'] / transactions['daysTravelled']
-        
-        #calculate Pub lic transportation cost per data
-        transactions['Public_card_Transportation_per_day'] = transactions['Public Transportation_card'] / transactions['daysTravelled']
-        
-        #parking cost per day
-        transactions['Parking_card_per_day'] = transactions['Parking_card'] / transactions['daysTravelled']
-
-        #lodging cost per day
-        transactions['lodging_cost_per_day']  = transactions['Lodging_total'] / transactions['daysTravelled']
-        
-         #lodging cost per day
-        transactions['lodging_card_per_day']  = transactions['Lodging_card'] / transactions['daysTravelled']
-        
-        #creat column that creats all cost on card total
-        transactions['card_total'] = transactions[transaction_columns['card_fields']].sum(axis=1)
-        
-        #create columns for total cost
-        transactions['total_cost'] = transactions[transaction_columns['total_fields']].sum(axis=1)
-        
-        #how much money on card to not
-        transactions['total_ratio'] = transactions['card_total'] / transactions['total_cost']
-        
-        #costs day
-        transactions['cost_per_day'] = transactions['total_cost'] / transactions['daysTravelled']
-        transactions['card_per_day'] = transactions['card_total'] / transactions['daysTravelled']
-        transactions['lodging_cost_per_day']  = transactions['Lodging_total'] / transactions['daysTravelled']
-        
-        #log cost and card per day
-        transactions['log_card_per_day'] = np.log(transactions['card_per_day'])
-        transactions['log_total_per_day'] = np.log(transactions['cost_per_day'])
+        #loop through and create aggreate fields based on the type of cost
+        for column in aggregate_fields:
+            transactions[column] = transactions[Transactions().get_columns(aggregate_fields[column])].sum(axis=1)
+            transactions[column+"_per_day"] = transactions[column] / transactions['days']
         
         #if credit card was not used a 0 for all fields
         transactions= transactions.fillna(0)
+        
+        # if for some reason there are inf convert them to 0s 
+        transactions = transactions.replace(np.inf, 0)
+        
         return transactions
     
     def __str__(self):
-        return 'his data is aggregated by person by year.  It is good for analysis with credit card transactions'
+        return 'This data is aggregated by person by year.  It is good for analysis with credit card transactions'
     
     def __repr__(self):
         return '[{}]'.format( ', '.join(  i  for i in dir(self) if i.startswith('mod')))
 
-
+    @staticmethod    
+    def columns_to_keep():
+        cols =[]
+        for i in transaction_columns:
+            if transaction_columns[i]['keep']:
+                cols.append(i) 
+        return cols
+    
+    
+    @staticmethod
+    def describe(col_name):
+        for i in transaction_columns:
+            if i == col_name:
+                print(transaction_columns[i]['description'] )
+    
+    @staticmethod
+    def get_columns(type_and_source):
+        s = []
+        for i in transaction_columns:
+            field =  transaction_columns[i]['type'] +" " + transaction_columns[i]['source']
+            if field == type_and_source:
+               s.append(i)
+        return s        
+                
     class model_1(object):
         '''
         summary of what we expect from this model
         '''
         def __init__(self):
-            self.model_data = Transactions().prepare()
-            '''
-            any modifications for just this model here
-            '''
+            data = Transactions().prepare()
+            
+            
+            cols_to_keep = Transactions().columns_to_keep()
+            data = data[cols_to_keep]
+            
+            self.model_data = data
+            
         def regression_1(self):
-            cols = ['variable_cost_per_day', 'misc_ratio', 'misc_cost_per_day','lodging_cost_per_day','Public_Transportation_cost_per_day','Parking_cost_per_day','trip_count']
-            df = self.model_data[cols]
-            df = df.replace([np.inf, -np.inf], np.nan)
-            df = df.dropna()
-            result = sm.ols(formula = 'variable_cost_per_day ~ misc_ratio + lodging_cost_per_day + trip_count',data=df).fit()
-            print(result.summary())
-            return result
+            None
         
         def regression_2(self):   
-
-           
             
-            cols = ['cost_per_day','log_total_per_day','lodging_cost_per_day' ,'log_card_per_day','card_per_day', 'total_ratio','trip_count']
-            df = self.model_data[cols]
-            df = df.replace([np.inf, -np.inf], np.nan)
-            df = df.dropna()
-            
-            df= df[df.total_ratio <= 1]
-            result = sm.ols(formula = 'log_total_per_day ~ total_ratio + lodging_cost_per_day +trip_count',data=df).fit()
-            print(result.summary())
-
+            None
 
 
         def graph(self):
             graphs = {}
-            one = self.model_data.plot.scatter(x='total_ratio', y='log_total_per_day', c='DarkBlue')
-            graphs.update({"scatter":one})
             return graphs
 
 
@@ -521,4 +500,9 @@ class Trip():
 
 
 
+
+
+
+            
+ 
 

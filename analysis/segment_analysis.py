@@ -62,14 +62,3 @@ model.model_data.plot.scatter(x='large_ms', y='cost_per_mile', c='DarkBlue')
 
 
 
-
-card = Transactions()
-
-model = card.model_1()
-
-#what are we doing with this model
-print(model)
-
-#this is the data we are using 
-df = model.model_data
-

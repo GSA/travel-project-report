@@ -37,8 +37,11 @@ def get(data):
         data_dict = getFolderData('data/lodging_details/')
     elif data == "rental_car":
         data_dict = getFolderData('data/rental_car_details/')
+    elif data == "credit_card":
+        data_dict = getFolderData('data/credit_card/')
     else:
-        print("please specify which data")
+        print("please specify which data / wrong dataname")
+        return None
     df = pd.DataFrame()
     for csv in data_dict:
         if data == 'transactions':
