@@ -18,6 +18,10 @@ def get(df):
     df = merge_records(df,cities)
     df = get_city_pair(df)
     df = merge_miles(df)
+    miles = df.drop_duplicates(subset='city_pair_code')
+    miles = miles[['city_pair_code','city_pair','miles']]
+    miles.to_csv('data/city_pair_info/miles.csv')
+
     #df =df[cols]
     df.to_csv("data/train_plane.csv")
     
@@ -31,14 +35,14 @@ def keep_certain(df):
 def apply_new_columns(df):
     
     df['ticket_departure_date'] = pd.to_datetime(df.ticket_departure_date)
-    df['booking_date'] = pd.to_datetime(df.ticket_departure_date)
+    df['booking_date'] = pd.to_datetime(df.booking_date)
     
     df['Departure Date/Time'] = pd.to_datetime(df['Departure Date/Time'])
     df['Purchased Date'] = pd.to_datetime(df['Purchased Date'])
     
     df['planeDif'] =(df.ticket_departure_date  - df.booking_date).dt.days
     df['traineDif'] = (df['Departure Date/Time'] - df['Purchased Date'] ).dt.days
-    
+    df['dif'] = df['planeDif'].fillna(df['traineDif'])
     
     df['departure_combined'] = df['origin_city_name'].fillna(df['Departure Location'])
     df['arrival_combined'] = df['destination_city_name'].fillna(df['Arrival Location'])

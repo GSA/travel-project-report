@@ -31,6 +31,9 @@ class get():
         merged_data =  merge_award(merged_data)
         merged_data =  merge_daily_demand(merged_data,self.segment)
         merged_data = merge_counts(merged_data,self.segment)
+        miles = get_miles()
+        print('miles')
+        merged_data = merge_miles(merged_data,miles)
         if save:
             print("saving data, please hold")
             merged_data.to_csv("data/by_segment.csv")
@@ -39,6 +42,14 @@ class get():
     
 #################################################
 
+def get_miles():
+    miles = pd.read_csv('data/city_pair_info/miles.csv')
+    return miles
+
+def merge_miles(df,miles):
+    df = pd.merge(df,miles,on='city_pair_code',how='left')
+    df['miles'] = df['nsmiles'].fillna(df['miles'])
+    return df
 
 def get_consumer():
     consumer = pd.read_csv("data/consumer/consumer.csv")

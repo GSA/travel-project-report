@@ -26,13 +26,13 @@ class Segment():
         data  = pd.read_csv('data/by_segment.csv')
 
         #calculate dash CA contract per mile
-        data['dash_per_mile'] = data.XCA_FARE / data.nsmiles
+        data['dash_per_mile'] = data.XCA_FARE / data.miles
         
         #calculate yca per mile
-        data['YCA_per_mile'] = data.YCA_FARE / data.nsmiles
+        data['YCA_per_mile'] = data.YCA_FARE / data.miles
         
         #calculate actual cost per mile travelled
-        data['cost_per_mile'] = data.paid_fare_including_taxes_and_fees / data.nsmiles
+        data['cost_per_mile'] = data.paid_fare_including_taxes_and_fees / data.miles
         
         #calculate ratio of XCA to YCA contract 
         data['city_pair_ratio'] = data.dash_per_mile / data.YCA_per_mile
@@ -73,11 +73,11 @@ class Segment():
             print("preparing data")
             data = Segment().prepare()
             
-            # only took fares with actual cost
+            # only took fares with actual cost. some data has low cost like $7 which i determined was either an exchange not specified or bad data
             data  = data[data['paid_fare_including_taxes_and_fees'] > 30 ]
 
             #cornerstone can not get accurate segment data when they have split fare_types 
-            #i removed them here so i only take
+            #i removed them here so i only take when not split fare
             data  = data[data.YCA_y != 1 ]
             data = data[data.DashCA_y != 1 ]
             
@@ -186,6 +186,7 @@ class Transactions():
         
         #if credit card was not used a 0 for all fields
         transactions= transactions.fillna(0)
+    
         
         # if for some reason there are inf convert them to 0s 
         transactions = transactions.replace(np.inf, 0)
