@@ -36,21 +36,27 @@ class Segment():
         
         #calculate ratio of XCA to YCA contract 
         data['city_pair_ratio'] = data.dash_per_mile / data.YCA_per_mile
-
-        data['ticketing_departure_date'] = pd.to_datetime(data.ticketing_departure_date)
-        data['ticket_booking_date'] = pd.to_datetime(data.ticket_booking_date)
-    
-        data['booking_advanced_days'] =(data.ticketing_departure_date  - data.ticket_booking_date).dt.days
-        
         
         data['region'] = data.Organization.str.extract('(\d+)')
         data['region'] = data.region.fillna('CO')
         
         data['bureau'] = data.Organization.str.extract("([^GSA\W\d])")
         
-        data['org'] = data.bureau + data.region
         
         data['grade'] = data.GRADE_CODE.str[:2]
+
+        data['ticketing_departure_date'] = pd.to_datetime(data.ticketing_departure_date)
+        
+        
+        
+        
+        data['ticket_booking_date'] = pd.to_datetime(data.ticket_booking_date)
+    
+        data['booking_advanced_days'] =(data.ticketing_departure_date  - data.ticket_booking_date).dt.days
+        
+        
+        
+        
         return data
 
     def __str__(self):

@@ -15,6 +15,7 @@ geotext = "*"
 geopy = "*"
 linearmodels = "*"
 statsmodels = "*"
+scipy = "==1.2.0"
 
 [requires]
-python_version = "3.7"
+python_version = "3.6.6"

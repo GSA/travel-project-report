@@ -141,7 +141,11 @@ segment_columns = {
  'FILEDATE': {'description':'','source':'','type':'','keep':False},
  'AGYSUB_DESC': {'description':'','source':'','type':'','keep':False},
  'PAYPLAN_CODE': {'description':'','source':'','type':'','keep':False},
- 'GRADE_CODE': {'description':'','source':'','type':'','keep':True}
+ 'GRADE_CODE': {'description':'','source':'','type':'','keep':False},
+ 'grade': {'description':'','source':'','type':'','keep':True},
+ 'region': {'description':'','source':'','type':'','keep':True},
+ 'bureau': {'description':'','source':'','type':'','keep':True}
+ 
  }
 
 
