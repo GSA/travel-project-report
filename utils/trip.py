@@ -7,7 +7,7 @@ Created on Mon Jan 28 10:13:12 2019
 
 
 import pandas as pd
-from utils import data, train_plane
+from utils import data#, train_plane
 
 
 

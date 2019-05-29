@@ -5,6 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 pylint = "*"
+ipykernel = "*"
 
 [packages]
 pandas = "*"
@@ -12,6 +13,8 @@ numpy = "*"
 xlrd = "*"
 geotext = "*"
 geopy = "*"
+linearmodels = "*"
+statsmodels = "*"
 
 [requires]
 python_version = "3.7"

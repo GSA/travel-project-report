@@ -131,7 +131,17 @@ segment_columns = {
  'cost_per_mile': {'description':'Actual cost per mile travelled','source':'','type':'','keep':True},
  'city_pair_ratio': {'description':'the ratio of _CA to YCA fare per route','source':'','type':'','keep':True},
  'ticket': {'description':'','source':'','type':'','keep':False},
- 'market_share_log': {'description':'','source':'','type':'','keep':True}
+ 'market_share_log': {'description':'','source':'','type':'','keep':True},
+ 'booking_advanced_days': {'description':'number of days purchased in advanced','source':'','type':'','keep':True},
+ 'Travel Authorization Number': {'description':'','source':'','type':'','keep':False},
+ 'Organization': {'description':'','source':'','type':'','keep':True},
+ 'EMAIL': {'description':'','source':'','type':'','keep':False},
+ 'Trip Type': {'description':'','source':'','type':'','keep':False},
+ 'Purpose': {'description':'','source':'','type':'','keep':True},
+ 'FILEDATE': {'description':'','source':'','type':'','keep':False},
+ 'AGYSUB_DESC': {'description':'','source':'','type':'','keep':False},
+ 'PAYPLAN_CODE': {'description':'','source':'','type':'','keep':False},
+ 'GRADE_CODE': {'description':'','source':'','type':'','keep':True}
  }
 
 

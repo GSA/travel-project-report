@@ -9,7 +9,7 @@ Created on Thu Mar 28 10:26:07 2019
 # -*- coding: utf-8 -*-
 
 
-import statsmodels.formula.api as sm
+#import statsmodels.formula.api as sm
 import numpy as np
 import pandas as pd
 from models.columns import  segment_columns , transaction_columns, aggregate_fields,trip_columns
@@ -37,8 +37,20 @@ class Segment():
         #calculate ratio of XCA to YCA contract 
         data['city_pair_ratio'] = data.dash_per_mile / data.YCA_per_mile
 
-
-
+        data['ticketing_departure_date'] = pd.to_datetime(data.ticketing_departure_date)
+        data['ticket_booking_date'] = pd.to_datetime(data.ticket_booking_date)
+    
+        data['booking_advanced_days'] =(data.ticketing_departure_date  - data.ticket_booking_date).dt.days
+        
+        
+        data['region'] = data.Organization.str.extract('(\d+)')
+        data['region'] = data.region.fillna('CO')
+        
+        data['bureau'] = data.Organization.str.extract("([^GSA\W\d])")
+        
+        data['org'] = data.bureau + data.region
+        
+        data['grade'] = data.GRADE_CODE.str[:2]
         return data
 
     def __str__(self):
@@ -96,11 +108,12 @@ class Segment():
             df_g['ticket'] = 1
             df_g = df_g[['city_pair_code','ticket']]
             df_g = df_g.groupby(by ='city_pair_code',as_index=False).sum()
-            a = df_g[df_g.ticket > 50]
+            a = df_g[df_g.ticket > 100]
             codes = list(a.city_pair_code)
             data = data[data.city_pair_code.isin(codes)]
             
-            
+            #only if booked with positive days
+            data = data[data['booking_advanced_days'] >= 0]
             #
             data['market_share_log'] = np.log(data['large_ms'])
             data['market_share_sq'] = data.large_ms * data.large_ms

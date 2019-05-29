@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from utils import data
+from utils import data,trip
 import pandas as pd
 import numpy as np
 
@@ -32,13 +32,30 @@ class get():
         merged_data =  merge_daily_demand(merged_data,self.segment)
         merged_data = merge_counts(merged_data,self.segment)
         miles = get_miles()
-        print('miles')
         merged_data = merge_miles(merged_data,miles)
+        
+        pnr = trip.get_travel_auth_to_pnr()
+        pnr= pnr.drop_duplicates()
+
+        merged_data = pd.merge(merged_data,pnr,on='pnr',how='left')
+        voucher = data.get(data="voucher")
+        voucher = voucher.drop_duplicates(subset=['Travel Authorization Number'])
+
+        cols =['Organization', 'Employee Email Address', 'Travel Authorization Number','Trip Type','Purpose']
+        voucher = voucher[cols]
+
+        merged_data =pd.merge(merged_data,voucher,how='left',on=['Travel Authorization Number'])
+
+        email = trip.get_email()
+        merged_data = merge_email(merged_data,email)
+        
+        
         if save:
             print("saving data, please hold")
             merged_data.to_csv("data/by_segment.csv")
         else:
             return merged_data
+    
     
 #################################################
 
@@ -137,3 +154,12 @@ def merge_counts(merged_data,segment):
     merged_data = pd.merge(merged_data,grouped,how='left',on='pnr')
     return merged_data
 
+
+def merge_email(data,email):
+    data['FILEDATE'] = "20" + data["segment_departure_date"].str[-2:]
+    data['FILEDATE'] =  pd.to_numeric(data.FILEDATE)
+    data = data.rename(columns={"Employee Email Address":"EMAIL"})
+    data['EMAIL'] = data['EMAIL'].str.lower()
+    email['EMAIL'] = email['EMAIL'].str.lower()
+    data = pd.merge(data,email,how="left", on =['FILEDATE','EMAIL'])
+    return data
