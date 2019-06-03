@@ -9,11 +9,11 @@ Created on Thu Mar 28 10:26:07 2019
 # -*- coding: utf-8 -*-
 
 
-#import statsmodels.formula.api as sm
+import statsmodels.formula.api as sm
 import numpy as np
 import pandas as pd
 from models.columns import  segment_columns , transaction_columns, aggregate_fields,trip_columns
-
+from sklearn import preprocessing
 
 
 class Segment():
@@ -37,22 +37,24 @@ class Segment():
         #calculate ratio of XCA to YCA contract 
         data['city_pair_ratio'] = data.dash_per_mile / data.YCA_per_mile
         
+        #get region 
         data['region'] = data.Organization.str.extract('(\d+)')
         data['region'] = data.region.fillna('CO')
         
+        #get bureau
         data['bureau'] = data.Organization.str.extract("([^GSA\W\d])")
         
-        
+        #get grade
         data['grade'] = data.GRADE_CODE.str[:2]
-
-        data['ticketing_departure_date'] = pd.to_datetime(data.ticketing_departure_date)
         
+        #datetime of departure date
+        data['segment_departure_date'] = pd.to_datetime(data.segment_departure_date)
         
-        
-        
+        #datetime booking
         data['ticket_booking_date'] = pd.to_datetime(data.ticket_booking_date)
-    
-        data['booking_advanced_days'] =(data.ticketing_departure_date  - data.ticket_booking_date).dt.days
+        
+        #booking days calculated
+        data['booking_advanced_days'] =(data.segment_departure_date  - data.ticket_booking_date).dt.days
         
         
         
@@ -120,9 +122,25 @@ class Segment():
             
             #only if booked with positive days
             data = data[data['booking_advanced_days'] >= 0]
-            #
+            
+            #log of market share
             data['market_share_log'] = np.log(data['large_ms'])
-            data['market_share_sq'] = data.large_ms * data.large_ms
+            
+            #days of week and month 
+            data['day_of_week'] = data['segment_departure_date'].dt.weekday_name
+            data['month'] = data['segment_departure_date'].dt.month_name()
+            
+            #days logged transformed
+            data['booking_days_log'] = np.log(data['booking_advanced_days']+1)
+            
+            #standarize the booking days
+            x = data[['booking_advanced_days']].values 
+            min_max_scaler = preprocessing.MinMaxScaler()
+            x_scaled = min_max_scaler.fit_transform(x)
+            df2 = pd.DataFrame(x_scaled)
+            data = data.reset_index()
+            data = data.join(df2,how='inner')
+            data = data.rename(columns={0:'booking_days_standarized'})
             
             #keep only the data we need
             cols_to_keep = Segment().columns_to_keep()
@@ -131,7 +149,7 @@ class Segment():
             self.model_data = data
        
         def __str__(self):
-            return "This model looks at the ratio of YCA fare to XCA fare and the effect on price"
+            return "This model looks at the cost per mile and various effects upon price"
         
         def __repr__(self):
             return '[{}]'.format( ', '.join(  i  for i in dir(self) if i.startswith('reg')))
@@ -142,7 +160,7 @@ class Segment():
             
             
             '''
-            result = sm.ols(formula = 'cost_per_mile ~ city_pair_ratio +no_CA_award + market_share_log + fare_type +  ticketing_adv_booking_group + city_pair_code ',data=self.model_data).fit()
+            result = sm.ols(formula = "cost_per_mile ~   market_share_log  + month + day_of_week + C(Year) + no_CA_award + booking_days_log + booking_days_log*C(fare_type, Treatment(reference='Dash CA')) + city_pair_code + self_booking_indicator",data=self.model_data).fit()
             print(result.summary())
             return result
 
@@ -153,12 +171,11 @@ class Segment():
             return result
 
         def regression_3(self):
-            '''
-            
-            
-            '''
-            result = sm.ols(formula = 'cost_per_mile ~ city_pair_ratio +  fare_type + market_share_log + fare_type*city_pair_ratio  + ticketing_adv_booking_group  + city_pair_code',data=self.model_data).fit()
-            #print(result.summary())
+            df = self.model_data
+            df['CPP'] = df.DashCA_x + df.YCA_x
+            df['ratio_squared'] = df.city_pair_ratio * df.city_pair_ratio
+            result = sm.logit(formula = 'CPP ~ dash_per_mile + YCA_per_mile + PAX_COUNT + cost_per_mile + market_share_log + booking_advanced_days +city_pair_ratio + c_squared',data=df).fit()
+             #print(result.summary())
             return result
 
         def regression_4(self):

@@ -5,17 +5,17 @@ verify_ssl = true
 
 [dev-packages]
 pylint = "*"
-ipykernel = "*"
 
 [packages]
+ipykernel = "*"
 pandas = "*"
 numpy = "*"
 xlrd = "*"
 geotext = "*"
 geopy = "*"
 linearmodels = "*"
-statsmodels = "*"
-scipy = "==1.2.0"
+scipy = "*"
+statsmodels = {editable = true,git = "https://github.com/statsmodels/statsmodels.git",ref = "v0.10.0.dev0"}
 
 [requires]
 python_version = "3.6.6"

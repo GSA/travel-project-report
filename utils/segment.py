@@ -49,6 +49,8 @@ class get():
         email = trip.get_email()
         merged_data = merge_email(merged_data,email)
         
+        reservations = get_self_booking_indicator()
+        merged_data = pd.merge(merged_data,reservations,how='left',on='pnr')
         
         if save:
             print("saving data, please hold")
@@ -163,3 +165,14 @@ def merge_email(data,email):
     email['EMAIL'] = email['EMAIL'].str.lower()
     data = pd.merge(data,email,how="left", on =['FILEDATE','EMAIL'])
     return data
+
+
+def get_self_booking_indicator():
+    reservations = data.get(data="reservation")
+    reservations = reservations[['pnr','self_booking_indicator']] 
+    reservations = reservations.drop_duplicates(subset='pnr')
+    return reservations
+
+
+    
+    

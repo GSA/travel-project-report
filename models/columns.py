@@ -76,7 +76,7 @@ segment_columns = {
  'quarter': {'description':'the quarter of year travelled','source':'','type':'','keep':True},
  'reckey': {'description':'','source':'','type':'','keep':False},
  'segment_arrival_date': {'description':'','source':'','type':'','keep':False},
- 'segment_departure_date': {'description':'','source':'','type':'','keep':False},
+ 'segment_departure_date': {'description':'','source':'','type':'','keep':True},
  'segment_exchange_indicator': {'description':'','source':'','type':'','keep':False},
  'segment_level_transaction_id': {'description':'','source':'','type':'','keep':False},
  'segment_refund_indicator': {'description':'','source':'','type':'','keep':False},
@@ -134,7 +134,7 @@ segment_columns = {
  'market_share_log': {'description':'','source':'','type':'','keep':True},
  'booking_advanced_days': {'description':'number of days purchased in advanced','source':'','type':'','keep':True},
  'Travel Authorization Number': {'description':'','source':'','type':'','keep':False},
- 'Organization': {'description':'','source':'','type':'','keep':True},
+ 'Organization': {'description':'','source':'','type':'','keep':False},
  'EMAIL': {'description':'','source':'','type':'','keep':False},
  'Trip Type': {'description':'','source':'','type':'','keep':False},
  'Purpose': {'description':'','source':'','type':'','keep':True},
@@ -144,8 +144,13 @@ segment_columns = {
  'GRADE_CODE': {'description':'','source':'','type':'','keep':False},
  'grade': {'description':'','source':'','type':'','keep':True},
  'region': {'description':'','source':'','type':'','keep':True},
- 'bureau': {'description':'','source':'','type':'','keep':True}
- 
+ 'bureau': {'description':'','source':'','type':'','keep':True},
+ 'month': {'description':'month of departure','source':'','type':'','keep':True},
+ 'day_of_week': {'description':'day of week of departure','source':'reservation','type':'','keep':True},
+ 'self_booking_indicator': {'description':'booked online or on phone','source':'reservation','type':'','keep':True},
+ 'booking_days_log': {'description':'log of days','source':'reservation','type':'','keep':True},
+ 'booking_days_standarized': {'description':'standarized transformation of booking lead time','source':'reservation','type':'','keep':True},
+
  }
 
 
