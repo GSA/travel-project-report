@@ -123,5 +123,6 @@ dmypy.json
 *.csv
 *.xlsx
 *.xls
+*.pkl
 
-
+.vscode/

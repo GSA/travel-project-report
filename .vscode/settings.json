@@ -1,3 +1,5 @@
 {
-    "python.pythonPath": "/Users/austinpeel/.local/share/virtualenvs/travel-project-report-kZrJ9ztH/bin/python"
+    "python.pythonPath": "/Users/charlessmcallister/.local/share/virtualenvs/travel-project-report-S1-ev3MJ/bin/python",
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true
 }
