@@ -12,21 +12,23 @@ import numpy as np
 class get():
 
     def __init__(self):
-        segment = data.get(data="segment")
+        self.segment = data.get(data="segment")
         self.consumer = get_consumer()
-        self.segment= add_labels_segment(segment)
+        
                
     def by_quarter(self,save=True):
         segment_grouped= group_segment_by_quarter(self.segment)
-        merged_data = merge_consumer_segment(self.consumer,segment_grouped)
-        merged_data = keep_only_n_segment(merged_data,self.segment,n=100)
-        merged_data = merge_award(merged_data)
+        segment_grouped = filter_for_coach(segment_grouped)
+        #merged_data = merge_consumer_segment(self.consumer,segment_grouped)
+        #merged_data = keep_only_n_segment(merged_data,self.segment,n=50)
+        merged_data = merge_award(segment_grouped)
         if save:
             merged_data.to_csv("data/by_quarter.csv")
         else:
             return merged_data
         
     def by_segment(self,save=True):
+        self.segment= add_labels_segment(self.segment)
         merged_data = merge_consumer_segment(self.consumer,self.segment)
         merged_data =  merge_award(merged_data)
         merged_data =  merge_daily_demand(merged_data,self.segment)
@@ -80,6 +82,11 @@ def get_consumer():
 
 
 
+def filter_for_coach(data):
+    fare = ['YCA','Dash CA','Other']
+    data = data[data.fare_type.isin(fare)]
+    return data
+
 
 def add_labels_segment(segment):
     segment['DashCA'] = np.where(segment['fare_type']=='Dash CA', 1, 0)
@@ -97,20 +104,20 @@ def add_labels_segment(segment):
 
 def group_segment_by_quarter(segment):
     segment = segment[segment.no_of_segments > 0]
-    seg = segment.groupby(by = ['fiscal_year_invoice_date','fiscal_quarter_invoice_date','city_pair_code'],as_index=False ).sum()
-    seg = seg[['fiscal_year_invoice_date','city_pair_code','fiscal_quarter_invoice_date','no_of_segments']]
-    seg2 = segment.groupby(by = ['fiscal_year_invoice_date','fiscal_quarter_invoice_date','city_pair_code'],as_index=False ).mean()
-    seg2 = seg2[['fiscal_year_invoice_date','fiscal_quarter_invoice_date','city_pair_code','DG','DashCA', 'YCA', '21 Days','paid_fare_including_taxes_and_fees']]
-    segTotal = pd.merge(seg,seg2,how='inner',on=['fiscal_year_invoice_date','fiscal_quarter_invoice_date','city_pair_code'])
+    seg = segment.groupby(by = ['Year','ticketing_adv_booking_group','city_pair_code','fare_type'],as_index=False ).sum()
+    seg = seg[['Year','city_pair_code','ticketing_adv_booking_group','no_of_segments','fare_type']]
+    seg2 = segment.groupby(by = ['Year','ticketing_adv_booking_group','city_pair_code','fare_type'],as_index=False ).mean()
+    seg2 = seg2[['Year','ticketing_adv_booking_group','city_pair_code','fare_type','paid_fare_including_taxes_and_fees']]
+    segTotal = pd.merge(seg,seg2,how='inner',on=['Year','ticketing_adv_booking_group','city_pair_code','fare_type'])
     return segTotal
 
 
 def merge_consumer_segment(consumer,segTotal,non_award=True):
     consumer['city_pair_code'] = consumer.airport_1 + "-" + consumer.airport_2
-    segTotal1 = pd.merge(segTotal,consumer,how="inner", on=['fiscal_year_invoice_date','fiscal_quarter_invoice_date','city_pair_code'])
+    segTotal1 = pd.merge(segTotal,consumer,how="inner", on=['fiscal_year_invoice_date','ticketing_adv_booking_group','city_pair_code'])
     
     consumer['city_pair_code'] = consumer.airport_2 + "-" + consumer.airport_1
-    segTotal2 = pd.merge(segTotal,consumer,how="inner", on=['fiscal_year_invoice_date','fiscal_quarter_invoice_date','city_pair_code'])
+    segTotal2 = pd.merge(segTotal,consumer,how="inner", on=['fiscal_year_invoice_date','ticketing_adv_booking_group','city_pair_code'])
 
     
     merged_data = segTotal1.append(segTotal2)

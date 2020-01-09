@@ -39,6 +39,8 @@ def get(data):
         data_dict = getFolderData('data/rental_car_details/')
     elif data == "credit_card":
         data_dict = getFolderData('data/credit_card/')
+    elif data == 'business_fares':
+        data_dict = getFolderData('data/business_fares/')
     else:
         print("please specify which data / wrong dataname")
         return None

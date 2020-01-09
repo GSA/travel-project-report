@@ -7,7 +7,7 @@ Created on Tue Apr  9 08:32:31 2019
 """
 import pandas as pd
 import numpy as np
-from geotext import GeoText
+#from geotext import GeoText
 
 
 
@@ -54,7 +54,8 @@ def apply_new_columns(df):
     df['segments_combined'] = df['number_of_segments'].fillna(df['legs'])
     
     
-    df['fare_combined'] = df['base_fare'].fillna(df['Total Rail Amount'])
+    df['fare_combined'] = df['paid_fare_including_taxes_and_fees'].fillna(df['Total Rail Amount'])
+    df['fare_combined2'] = df['Airline Flight'].fillna(df['Total Rail Amount'])
     return df
 
 
@@ -68,9 +69,9 @@ def get_unique_city_list(df):
     return records
 
 
-from geopy.geocoders import Nominatim
-geolocator = Nominatim(user_agent="specify_your_app_name_here")
-from geopy.distance import geodesic
+#from geopy.geocoders import Nominatim
+#geolocator = Nominatim(user_agent="specify_your_app_name_here")
+#from geopy.distance import geodesic
 
 def lat_and_long(city):
     try:
@@ -200,11 +201,6 @@ cols=['fare_type',
 'lat_d',
 'long_d']
 
-if __name__ == "__main__":
-    import trip
-    amtrak = trip.get_amtrak()
-    df = pd.read_csv("data/by_trip.csv")
-    train = pd.merge(df, amtrak,how='left',on=['Travel Authorization Number'])
-    get(train)
+
  
     

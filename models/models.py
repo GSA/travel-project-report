@@ -15,6 +15,35 @@ import pandas as pd
 from models.columns import  segment_columns , transaction_columns, aggregate_fields,trip_columns
 from sklearn import preprocessing
 
+class Route():
+    
+    def prepare(self):
+        data = pd.read_csv('data/by_route.csv')
+        
+        #calculate cost per mile
+        data['cost_per_mile'] = data.paid_fare_including_taxes_and_fees / data.miles
+
+        return data
+    
+    class model_1(object):
+        
+        def __init__(self):
+            
+            data = Route().prepare()
+            
+            # only non Y
+            data = data[data['fare_type'] != 'Y']
+            
+            self.model_data = data
+        
+        def regression_1(self):
+            '''
+            this regression looks at business fares and compares them against the government fares using interaction effects with booking lead time
+            '''
+            result = sm.ols(formula = "cost_per_mile ~   C(Year) + ticketing_adv_booking_group  + C(fare_type, Treatment(reference='YCA')) +C(fare_type, Treatment(reference='YCA'))*ticketing_adv_booking_group +  city_pair_code",data=self.model_data).fit()
+            print(result.summary())
+            
+            return result
 
 class Segment():
     
@@ -32,7 +61,8 @@ class Segment():
         data['YCA_per_mile'] = data.YCA_FARE / data.miles
         
         #calculate actual cost per mile travelled
-        data['cost_per_mile'] = data.paid_fare_including_taxes_and_fees / data.miles
+        #data['cost_per_mile'] = data.paid_fare_including_taxes_and_fees / data.miles
+        data['cost_per_mile'] = data.base_fare / data.miles
         
         #calculate ratio of XCA to YCA contract 
         data['city_pair_ratio'] = data.dash_per_mile / data.YCA_per_mile
@@ -111,12 +141,12 @@ class Segment():
             fare = ['YCA','Dash CA','Other','DG']
             data = data[data.fare_type.isin(fare)]
             
-            #take only city pairs with atleast 50 flights
+            #take only city pairs with atleast 40 flights
             df_g = data
             df_g['ticket'] = 1
             df_g = df_g[['city_pair_code','ticket']]
             df_g = df_g.groupby(by ='city_pair_code',as_index=False).sum()
-            a = df_g[df_g.ticket > 100]
+            a = df_g[df_g.ticket > 40]
             codes = list(a.city_pair_code)
             data = data[data.city_pair_code.isin(codes)]
             
@@ -126,12 +156,16 @@ class Segment():
             #log of market share
             data['market_share_log'] = np.log(data['large_ms'])
             
+            #only take economy 
+            data = data[data['cabin_svc_class_of_segment'] == 'ECONOMY']
+            
             #days of week and month 
             data['day_of_week'] = data['segment_departure_date'].dt.weekday_name
             data['month'] = data['segment_departure_date'].dt.month_name()
             
             #days logged transformed
-            data['booking_days_log'] = np.log(data['booking_advanced_days']+1)
+            print("doing actual log")
+            data['booking_days_log'] = np.log10(data['booking_advanced_days']+1)
             
             #standarize the booking days
             x = data[['booking_advanced_days']].values 
@@ -145,6 +179,8 @@ class Segment():
             #keep only the data we need
             cols_to_keep = Segment().columns_to_keep()
             data = data[cols_to_keep]
+            
+            data['city_pair_ratio_2'] = data['city_pair_ratio'] * data['city_pair_ratio']
             
             self.model_data = data
        
@@ -361,9 +397,9 @@ class Train_Plane:
 
             
             #only take regular class fares
-            fare = ['YCA','Dash CA','DG','Acela Business Class Seat', 'Coach Reserved Seat']
+            fare = ['YCA','Dash CA','Acela Business Class Seat', 'Coach Reserved Seat']
             df = df[df.type.isin(fare)]
-            
+            df['cost_per_mile'] = df.fare_combined / df.miles
             print("four")
             self.model_data = df  
             
@@ -391,14 +427,14 @@ class Train_Plane:
             df = self.model_data
             
             #compare only mose common routes
-            route = ['New York-Washington','Philadelphia-Richmond','Boston-New York']
-            df = df[df.city_pair.isin(route)]
+            #route = ['New York-Washington','Philadelphia-Richmond','Boston-New York']
+            #df = df[df.city_pair.isin(route)]
             
             #keep only most common grades
-            gradeKeep = ['11','12','13','14','15']
-            df_grade = df[df.grade.isin(gradeKeep)]
+            #gradeKeep = ['11','12','13','14','15']
+            #df_grade = df[df.grade.isin(gradeKeep)]
 
-            result = sm.ols(formula = 'train_x ~ grade + city_pair',data=df_grade).fit()
+            result = sm.ols(formula = 'fare_combined ~ train_x + miles',data=df).fit()
             print(result.summary())
             
     class model_2(object):
@@ -555,9 +591,31 @@ class Trip():
 
 
 
+class Quarter():
+    def prepare(self):
 
+        df = pd.read_csv('data/by_quarter.csv')
+        
+        return df
+    
+    def __str__(self):
+        return 'This is an aggregate level by quarter if segement routes'
+    
+    def __repr__(self):
+        return '[{}]'.format( ', '.join(  i  for i in dir(self) if i.startswith('mod')))
 
-
+    class model_1(object):
+        def __init__(self):
+            
+            df = Quarter().prepare()
+            
+            
+            self.model_data = df
+        def regression_1(self):
+            
+            ##esult = sm.ols(formula = 'travel_fees ~ self_booking_indicator + GRADE_CODE + refund + exchange',data=self.model_data).fit()
+            #print(result.summary())
+            print(None)
 
 
             
