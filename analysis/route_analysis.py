@@ -26,5 +26,5 @@ This model uses business fares and govt fare to get an idea of how well the
  beacuse most savings with regular booking happen outside the 14 day window
 
 '''
-result = sm.ols(formula = "cost_per_mile ~    fare_type  + C(Year) +  ticketing_adv_booking_group+ ticketing_adv_booking_group*C(fare_type, Treatment(reference='YCA')) + city_pair ",data=df).fit()
+result = sm.ols(formula = "cost_per_mile ~    C(Year) +  ticketing_adv_booking_group+ ticketing_adv_booking_group*C(fare_type, Treatment(reference='YCA')) + city_pair ",data=df).fit()
 print(result.summary())
