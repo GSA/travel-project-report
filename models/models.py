@@ -161,7 +161,7 @@ class Segment():
             
             #days of week and month 
             data['day_of_week'] = data['segment_departure_date'].dt.weekday_name
-            data['month'] = data['segment_departure_date'].dt.month_name()
+            data['month'] = data['segment_departure_date'].dt.month
             
             #days logged transformed
             print("doing actual log")
